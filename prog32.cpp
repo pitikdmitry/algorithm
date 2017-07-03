@@ -1,232 +1,254 @@
-/*3_2. Современники.
-Группа людей называется современниками если был такой момент, когда они могли собраться
-вместе. Для этого в этот момент каждому из них должно было уже исполниться 18 лет, но ещё не
-исполниться 80 лет.
-Дан список Жизни Великих Людей. Необходимо получить максимальное количество
-современников. В день 18летия человек уже может принимать участие в собраниях, а в день
-80летия и в день смерти уже не может.
-Замечание. Человек мог не дожить до 18-летия, либо умереть в день 18-летия. В этих случаях
-принимать участие в собраниях он не мог.
-*/
 #include <iostream>
-#include <cstdlib>
+#include <assert.h>
+#include <queue>
+using namespace std;
 
-
-
-struct date
+//Node
+//-----------------------------------------------------
+template <typename T>
+struct CNode
 {
-	int day;
-	int month;
-	int year;
-	bool is_born;
-	bool is_dead;
-	date( );
-	date( int day, int month, int year );
-	bool operator>=( date other );
-	bool operator<( date other );
+    T Data;
+    int Priority;
+    CNode<T>* Left;
+    CNode<T>* Right;
+    CNode( ) : Data( 0 ), Priority( 0 ), Left( nullptr ), Right( nullptr ) {}
+    CNode( T Data, int priority = 0 ) : Data( Data ), Priority( priority ), Left( nullptr ), Right( nullptr ) {}
 };
-void input_date_of_start( date& );
-void input_date_of_end( date& date_of_birth );
+//-----------------------------------------------------
+//end node
 
-date::date( )
+//BinaryTree
+//------------------------------------------------------
+template <typename T>
+class CTree
 {
-	day = 0;
-	month = 0;
-	year = 0;
-	is_born = false;
+public:
+    CTree( ) : root( nullptr ) {}
+    ~CTree( );
+    void AddNode( T Data );
+    CNode<T>* GetRoot( );
+    void TraverseBFS( );
+
+private:
+    CNode<T>* root;
+    void deleteTree( CNode<T>* node );
+};
+
+template <typename T>
+CTree<T>::~CTree( )
+{
+    deleteTree( root );
 }
 
-date::date( int day, int month, int year ): day( day ), month( month ), year( year )
+template <typename T>
+void CTree<T>::deleteTree( CNode<T>* node )
 {
-	is_born = false;
+    if( node == nullptr ){
+        return;
+    }
+    deleteTree( node->Left );
+    deleteTree( node->Right );
+    delete[] node;
 }
 
-void input_date_of_start( date& date_of_birth )
+template <typename T>
+CNode<T>* CTree<T>::GetRoot( )
 {
-	std::cin >> date_of_birth.day;
-	std::cin >> date_of_birth.month;
-	std::cin >> date_of_birth.year;
-	date_of_birth.is_born = false;
-	date_of_birth.is_dead = false;
+    return root;
 }
 
-void input_date_of_end( date& date_of_birth, date& date_of_death )
+template <typename T>
+void CTree<T>::AddNode( T data )
 {
-	date_of_death.is_born = false;
-	date_of_death.is_dead = false;
-	int temp_dead_day = 0;
-	int temp_dead_month = 0;
-	int temp_dead_year = 0;
-	std::cin >> temp_dead_day;
-	std::cin >> temp_dead_month;
-	std::cin >> temp_dead_year;
+    CNode<T>* q = root;
+    CNode<T>* parent = q;
 
-	date temp_dead( temp_dead_day, temp_dead_month, temp_dead_year );
+    if( q == nullptr ){
+        root = new CNode<T>( data );
+        return;
+    }
 
-	date date18( date_of_birth.day, date_of_birth.month, date_of_birth.year + 18 );
-	date date80( date_of_birth.day, date_of_birth.month, date_of_birth.year + 80 );
+    while( q != nullptr ){
+        parent = q;
+        if( data > q->Data ){
+            q = q->Right;
+        }
+        else{
+            q = q->Left;
+        }
+    }
 
-	if( date18 < temp_dead ){
-		date_of_birth.is_born = true;
-		date_of_birth.is_dead = false;
-		date_of_birth.year += 18;
-	}
-
-	if( date80 < temp_dead && date_of_birth.is_born == true ){
-		date_of_death.is_dead = true;
-		date_of_death.is_born = false;
-		date_of_death.day = date80.day - 1;
-		date_of_death.month = date80.month;
-		date_of_death.year = date80.year;
-	}
-	else if( date80 >= temp_dead && date_of_birth.is_born == true ){
-		date_of_death.is_dead = true;
-		date_of_death.is_born = false;
-		date_of_death.day = temp_dead.day - 1;
-		date_of_death.month = temp_dead.month;
-		date_of_death.year = temp_dead.year;
-	}
+    if( q == nullptr ){
+        q = new CNode<T>( data );
+        if( q->Data > parent->Data ){
+            parent->Right = q;
+        }
+        else{
+            parent->Left = q;
+        }
+    }
+    return;
 }
 
-bool date::operator<( date other )
+template <typename T>
+void CTree<T>::TraverseBFS( )
 {
-	if( year < other.year ){
-		return true;
-	}
-	else if( year == other.year ){
-		if( month < other.month ){
-			return true;
-		}
-		else if( month == other.month ){
-			if( day < other.day ){
-				return true;
-			}
-			else if( day >= other.day ){
-				return false;
-			}
-		}
-		else if( month > other.month ){
-			return false;
-		}
-	}
-	else if( year > other.year ){
-		return false;
-	}
+    std::queue< CNode<T>* > q;
+    q.push( root );
+
+    while( !q.empty( ) ){
+        CNode<T>* node = q.front( );
+        q.pop( );
+        std::cout << node->Data << ' ';
+        if( node->Left != nullptr ){
+            q.push( node->Left );
+        }
+        if( node->Right != nullptr ){
+            q.push( node->Right );
+        }
+    }
+}
+//End BinaryTree
+//-------------------------------------------------------
+
+//Treap
+//-------------------------------------------------------
+template <typename T>
+class CTreap
+{
+public:
+    CTreap( ) : root( nullptr ) {}
+    ~CTreap( );
+    void AddNode( T Data, int priotity );
+    void Split( CNode<T>* node, int value, CNode<T>*& left, CNode<T>*& right );
+    CNode<T>* GetRoot( );
+    void TraverseBFS( );
+
+private:
+    CNode<T>* root;
+    void deleteTree( CNode<T>* node );
+};
+
+template <typename T>
+CTreap<T>::~CTreap( )
+{
+    deleteTree( root );
 }
 
-bool date::operator>=( date other )
+template <typename T>
+void CTreap<T>::deleteTree( CNode<T>* node )
 {
-	if( this->year > other.year ){
-		return true;
-	}
-	else if( year == other.year ){
-		if( month > other.month ){
-			return true;
-		}
-		else if( month == other.month ){
-			if( day >= other.day ){
-				return true;
-			}
-			else if( day < other.day ){
-				return false;
-			}
-		}
-		else if( month < other.month ){
-			return false;
-		}
-	}
-	else if( year < other.year ){
-		return false;
-	}
+    if( node == nullptr ){
+        return;
+    }
+    deleteTree( node->Left );
+    deleteTree( node->Right );
+    delete[] node;
 }
 
-template<typename T>
-void BuildHeap( T* a, int heap_size );
-
-template<typename T>
-void HeapSort( T* a, int n );
-
-template<typename T>
-void SiftDown( T* a, int i, int heap_size );
-
-template<typename T>
-void BuildHeap( T* a, int heap_size )
+template <typename T>
+CNode<T>* CTreap<T>::GetRoot( )
 {
-	int parent = ( heap_size - 2 ) / 2;
-	for( int i = parent; i >= 0; --i ){
-		SiftDown( a, i, heap_size);
-	}
+    return root;
 }
 
-template<typename T>
-void HeapSort( T* a, int n )
+template <typename T>
+void CTreap<T>::Split( CNode<T>* node, int data, CNode<T>*& left, CNode<T>*& right )
 {
-	int heap_size = n;
-	BuildHeap( a, heap_size );
-
-	while( heap_size > 1 ){
-		std::swap( a[0], a[heap_size - 1] );
-		--heap_size;
-		SiftDown( a, 0, heap_size );
-	}
+    if( node == nullptr ){
+        left = nullptr;
+        right = nullptr;
+    }
+    else if( node->Data <= data ){
+        Split( node->Right, data, node->Right, right );
+        left = node;
+    }
+    else{
+        Split( node->Left, data, left, node->Left );
+        right = node;
+    }
 }
 
-template<typename T>
-void SiftDown( T* a, int i, int heap_size )
+template <typename T>
+void CTreap<T>::AddNode( T data, int priority )
 {
-	int smallest = i;
-	int left = 2 * i + 1;
-	int right = 2 * i + 2;
-	if( left < heap_size && a[smallest] < a[left] ){
-		smallest = left;
-	}
-	if( right < heap_size && a[smallest] < a[right] ){
-		smallest = right;
-	}
-	if( smallest != i ){
-		std::swap( a[smallest], a[i] );
-		SiftDown( a, smallest, heap_size );
-	}
+    CNode<T>* q = root;
+    CNode<T>* parent = q;
+    CNode<T>* newNode = new CNode<T>( data, priority );
+
+    if( q == nullptr ){
+        root = newNode;
+        return;
+    }
+
+    while( q != nullptr && priority <= q->Priority ){
+        parent = q;
+        if( data > q->Data ){
+            q = q->Right;
+        }
+        else{
+            q = q->Left;
+        }
+    }
+
+    Split( q, data, parent->Left, parent->Right );
+
+    q = newNode;
+
+    return;
 }
 
-template<typename T>
-int max_modernists( T* a, int size )
+template <typename T>
+void CTreap<T>::TraverseBFS( )
 {
-	int current_max = 0;
-	int max = current_max;
-	for( int i = 0; i < size; ++i ){
-		if( a[i].is_born == true && a[i].is_dead == false ){
-			++current_max;
-			if( current_max > max ){
-				max = current_max;
-			}
-		}
-		else if( a[i].is_born == false && a[i].is_dead == true ){
-			--current_max;
-		}
-	}
-	return max;
+    std::queue< CNode<T>* > q;
+    q.push( root );
+
+    while( !q.empty( ) ){
+        CNode<T>* node = q.front( );
+        q.pop( );
+        std::cout << node->Data << ' ';
+        if( node->Left != nullptr ){
+            q.push( node->Left );
+        }
+        if( node->Right != nullptr ){
+            q.push( node->Right );
+        }
+    }
 }
+//End Treap
+//--------------------------------------------------------
+
+
+
 
 int main()
 {
-	int n = 0;
-	std::cin >> n;
+    int n = 0;
+    std::cin >> n;
 
-	int size = 2 * n;
-	date* all_dates = new date[size];
-	for( int i = 0; i < size; ++i ){
-		input_date_of_start( all_dates[i] );
-		if( i < size ){
-			++i;
-			input_date_of_end( all_dates[i - 1], all_dates[i] );
-		}
-	}
+    CTree<int> binaryTree;
+    CTreap<int> treeHeap;
 
-	HeapSort( all_dates, size );
+    int data = 0;
+    int priority = 0;
 
-	std::cout << max_modernists( all_dates, size );
+    for( int i = 0; i < n; ++i ){
+        std::cin >> data;
+        std::cin >> priority;
 
-	delete[] all_dates;
-	return 0;
+        treeHeap.AddNode( data, priority );
+        binaryTree.AddNode( data );
+    }
+
+    std::cout<<"binary: " << std::endl;
+    binaryTree.TraverseBFS();
+    std::cout<<std::endl;
+
+    std::cout<<"treeHeap: " << std::endl;
+    treeHeap.TraverseBFS();
+    std::cout<<std::endl;
+
+    return 0;
 }
